@@ -1,0 +1,40 @@
+install.packages("wooldridge")
+library(wooldridge)
+wage1 = na.omit(wooldridge::wage1)
+model <- lm(log(wage) ~ educ + exper + I(exper^2) + female + married + married*female, data=wage1)
+summary(model)
+install.packages("lmtest")
+library(lmtest)
+bptest(model)
+#H0 v modelu neni pritomna heteroskedasticita
+#H1 v modelu je pritomna heteroskedasticita
+#p= 0,01312<0,05 
+install.packages("sandwich")
+library(sandwich)
+library(lmtest)
+coeftest(model, vcov = vcovHC(model, type = "HC1"))
+install.packages("stargazer")
+stargazer(model, type = "text", se = list(sqrt(diag(vcovHC(model, type = "HC1")))))
+exper <- coef(model)["exper"]
+exper^2<- coef(model)["I(exper^2)"]
+exper_max <- -beta_2 / (2 * beta_3)
+exper_max
+library(wooldridge)
+wage2 = na.omit(wooldridge::wage2)
+model2 <- lm(hours ~ log(wage) + tenure + married + age, data=wage2)
+summary(model2)
+library(lmtest)
+bptest(model)
+install.packages("AER")
+library(AER)
+IVS1 = lm(log(wage)~tenure + married + age + black + feduc, data = wage2)
+summary(IVS1)
+wage2$logwage_fit = IVS1$fitted.values
+head(wage2)
+IVS2 = lm(hours~ logwage_fit + tenure + married + age + black + feduc, data = wage2)
+summary(IVS2)
+library(stargazer)
+stargazer(model2,IVS2, type = "text")
+library(AER)
+iv_reg = ivreg(hours~log(wage) + tenure + married + age| black + feduc + tenure + married + age,, data = wage2)
+summary(iv_reg,vcov = sandwich, diagnostics = TRUE)
